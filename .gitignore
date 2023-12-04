@@ -7,8 +7,10 @@ wandb/
 renders/
 .ipynb_checkpoints/
 __pycache__/
+.DS_Store
 *.gif
 *.mp4
+*.DS_Store
 *.pkl
 *.pt
 *.npy
