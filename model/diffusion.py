@@ -445,6 +445,7 @@ class GaussianDiffusion(nn.Module):
         return sample
 
     def p_losses(self, x_start, cond, t):
+
         noise = torch.randn_like(x_start)
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
 
@@ -464,10 +465,10 @@ class GaussianDiffusion(nn.Module):
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
 
         # split off contact from the rest
-        model_contact, model_out = torch.split(
-            model_out, (4, model_out.shape[2] - 4), dim=2
-        )
-        target_contact, target = torch.split(target, (4, target.shape[2] - 4), dim=2)
+#        model_contact, model_out = torch.split(
+#            model_out, (4, model_out.shape[2] - 4), dim=2
+#        )
+#        target_contact, target = torch.split(target, (4, target.shape[2] - 4), dim=2)
 
         # velocity loss
         target_v = target[:, 1:] - target[:, :-1]
@@ -478,44 +479,46 @@ class GaussianDiffusion(nn.Module):
 
         # FK loss
         b, s, c = model_out.shape
+
         # unnormalize
-        # model_out = self.normalizer.unnormalize(model_out)
-        # target = self.normalizer.unnormalize(target)
+#        model_out = self.normalizer.unnormalize(model_out)
+#        target = self.normalizer.unnormalize(target)
         # X, Q
-        model_x = model_out[:, :, :3]
-        model_q = ax_from_6v(model_out[:, :, 3:].reshape(b, s, -1, 6))
-        target_x = target[:, :, :3]
-        target_q = ax_from_6v(target[:, :, 3:].reshape(b, s, -1, 6))
+#        model_x = model_out[:, :, :3]
+#        model_q = ax_from_6v(model_out[:, :, 3:].reshape(b, s, -1, 6))
+#        target_x = target[:, :, :3]
+#        target_q = ax_from_6v(target[:, :, 3:].reshape(b, s, -1, 6))
 
         # perform FK
-        model_xp = self.smpl.forward(model_q, model_x)
-        target_xp = self.smpl.forward(target_q, target_x)
+#        model_xp = self.smpl.forward(model_q, model_x)
+#        target_xp = self.smpl.forward(target_q, target_x)
 
-        fk_loss = self.loss_fn(model_xp, target_xp, reduction="none")
+#        fk_loss = self.loss_fn(model_xp, target_xp, reduction="none")
+        fk_loss = self.loss_fn(model_out, target, reduction="none")
         fk_loss = reduce(fk_loss, "b ... -> b (...)", "mean")
         fk_loss = fk_loss * extract(self.p2_loss_weight, t, fk_loss.shape)
 
         # foot skate loss
-        foot_idx = [7, 8, 10, 11]
+#        foot_idx = [7, 8, 10, 11]
 
         # find static indices consistent with model's own predictions
-        static_idx = model_contact > 0.95  # N x S x 4
-        model_feet = model_xp[:, :, foot_idx]  # foot positions (N, S, 4, 3)
-        model_foot_v = torch.zeros_like(model_feet)
-        model_foot_v[:, :-1] = (
-            model_feet[:, 1:, :, :] - model_feet[:, :-1, :, :]
-        )  # (N, S-1, 4, 3)
-        model_foot_v[~static_idx] = 0
-        foot_loss = self.loss_fn(
-            model_foot_v, torch.zeros_like(model_foot_v), reduction="none"
-        )
-        foot_loss = reduce(foot_loss, "b ... -> b (...)", "mean")
+#        static_idx = model_contact > 0.95  # N x S x 4
+#        model_feet = model_xp[:, :, foot_idx]  # foot positions (N, S, 4, 3)
+#        model_foot_v = torch.zeros_like(model_feet)
+#        model_foot_v[:, :-1] = (
+#            model_feet[:, 1:, :, :] - model_feet[:, :-1, :, :]
+#        )  # (N, S-1, 4, 3)
+#        model_foot_v[~static_idx] = 0
+#        foot_loss = self.loss_fn(
+#            model_foot_v, torch.zeros_like(model_foot_v), reduction="none"
+#        )
+#        foot_loss = reduce(foot_loss, "b ... -> b (...)", "mean")
 
         losses = (
             0.636 * loss.mean(),
             2.964 * v_loss.mean(),
             0.646 * fk_loss.mean(),
-            10.942 * foot_loss.mean(),
+#            10.942 * foot_loss.mean(),
         )
         return sum(losses), losses
 

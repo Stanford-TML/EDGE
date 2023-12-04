@@ -39,6 +39,7 @@ smpl_joints = [
     "rwrist", # 21
     "lhand", # 22
     "rhand", # 23
+#    "phone", # 24
 ]
 
 smpl_parents = [
@@ -66,6 +67,7 @@ smpl_parents = [
     19,
     20,
     21,
+#    3,
 ]
 
 smpl_offsets = [
@@ -93,8 +95,8 @@ smpl_offsets = [
     [-0.26910836, 0.00679372, -0.00602676],
     [0.08669055, -0.01063603, -0.01559429],
     [-0.0887537, -0.00865157, -0.01010708],
+#    [-0.0887537, -0.00865157, -0.01010708], #phone offset
 ]
-
 
 def set_line_data_3d(line, x):
     line.set_data(x[:, :2].T)

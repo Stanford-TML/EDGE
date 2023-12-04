@@ -19,11 +19,13 @@ def create_dataset(opt):
     print("Slicing test data")
     slice_aistpp(f"test/motions", f"test/wavs")
     # process dataset to extract audio features
-    if opt.extract_baseline:
+#    if opt.extract_baseline:
+    if True:
         print("Extracting baseline features")
         baseline_extract("train/wavs_sliced", "train/baseline_feats")
         baseline_extract("test/wavs_sliced", "test/baseline_feats")
-    if opt.extract_jukebox:
+#    if opt.extract_jukebox:
+    if False:
         print("Extracting jukebox features")
         jukebox_extract("train/wavs_sliced", "train/jukebox_feats")
         jukebox_extract("test/wavs_sliced", "test/jukebox_feats")

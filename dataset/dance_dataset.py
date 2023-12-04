@@ -53,7 +53,8 @@ class AISTPPDataset(Dataset):
                 normalizer, open(os.path.join(backup_path, "normalizer.pkl"), "wb")
             )
         # load raw data
-        if not force_reload and pickle_name in os.listdir(backup_path):
+        #if not force_reload and pickle_name in os.listdir(backup_path):
+        if False: #Forcing reload data
             print("Using cached dataset...")
             with open(os.path.join(backup_path, pickle_name), "rb") as f:
                 data = pickle.load(f)
@@ -64,18 +65,25 @@ class AISTPPDataset(Dataset):
                 pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
 
         print(
-            f"Loaded {self.name} Dataset With Dimensions: Pos: {data['pos'].shape}, Q: {data['q'].shape}"
+#            f"Loaded {self.name} Dataset With Dimensions: Pos: {data['pos'].shape}, Q: {data['q'].shape}"
+            f"Loaded {self.name} Dataset With Dimensions: {data['pos'].shape}"
         )
 
         # process data, convert to 6dof etc
-        pose_input = self.process_dataset(data["pos"], data["q"])
+#        pose_input = self.process_dataset(data["pos"], data["q"])
+        pose_input = self.process_dataset(data["pos"])
+
+        #Not process
+        pose_input = data['pos']
+
         self.data = {
             "pose": pose_input,
             "filenames": data["filenames"],
             "wavs": data["wavs"],
         }
-        assert len(pose_input) == len(data["filenames"])
-        self.length = len(pose_input)
+
+        assert pose_input.shape[0] == len(data["filenames"])
+        self.length = pose_input.shape[0]
 
     def __len__(self):
         return self.length
@@ -102,12 +110,21 @@ class AISTPPDataset(Dataset):
         #   |    |- wavs
 
         motion_path = os.path.join(split_data_path, "motions_sliced")
-        sound_path = os.path.join(split_data_path, f"{self.feature_type}_feats")
+        sound_path = os.path.join(split_data_path, f"baseline_feats") #fixed directory
         wav_path = os.path.join(split_data_path, f"wavs_sliced")
+
+        print(f"Motion: {motion_path}")
+        print(f"Sound: {sound_path}")
+        print(f"Wav: {wav_path}")
+
         # sort motions and sounds
         motions = sorted(glob.glob(os.path.join(motion_path, "*.pkl")))
         features = sorted(glob.glob(os.path.join(sound_path, "*.npy")))
         wavs = sorted(glob.glob(os.path.join(wav_path, "*.wav")))
+
+        print(f"Motion: {len(motions)}")
+        print(f"Sound: {len(features)}")
+        print(f"Wav: {len(wavs)}")
 
         # stack the motions and features together
         all_pos = []
@@ -115,7 +132,10 @@ class AISTPPDataset(Dataset):
         all_names = []
         all_wavs = []
         assert len(motions) == len(features)
+#        count = 0
         for motion, feature, wav in zip(motions, features, wavs):
+#            count += 1
+#            print(count/len(motions))
             # make sure name is matching
             m_name = os.path.splitext(os.path.basename(motion))[0]
             f_name = os.path.splitext(os.path.basename(feature))[0]
@@ -123,61 +143,69 @@ class AISTPPDataset(Dataset):
             assert m_name == f_name == w_name, str((motion, feature, wav))
             # load motion
             data = pickle.load(open(motion, "rb"))
-            pos = data["pos"]
-            q = data["q"]
-            all_pos.append(pos)
-            all_q.append(q)
+#            pos = data["pos"]
+#            q = data["q"]
+#            all_pos.append(pos)
+            all_pos.append(data)
+#            all_q.append(q)
             all_names.append(feature)
             all_wavs.append(wav)
 
         all_pos = np.array(all_pos)  # N x seq x 3
-        all_q = np.array(all_q)  # N x seq x (joint * 3)
+#        all_q = np.array(all_q)  # N x seq x (joint * 3)
         # downsample the motions to the data fps
         print(all_pos.shape)
         all_pos = all_pos[:, :: self.data_stride, :]
-        all_q = all_q[:, :: self.data_stride, :]
+#        all_q = all_q[:, :: self.data_stride, :]
         data = {"pos": all_pos, "q": all_q, "filenames": all_names, "wavs": all_wavs}
+        data = {"pos": all_pos, "filenames": all_names, "wavs": all_wavs}
         return data
 
-    def process_dataset(self, root_pos, local_q):
+#    def process_dataset(self, root_pos, local_q):
+    def process_dataset(self, d):
         # FK skeleton
-        smpl = SMPLSkeleton()
+#        smpl = SMPLSkeleton()
         # to Tensor
-        root_pos = torch.Tensor(root_pos)
-        local_q = torch.Tensor(local_q)
+#        root_pos = torch.Tensor(root_pos)
+#        local_q = torch.Tensor(local_q)
         # to ax
-        bs, sq, c = local_q.shape
-        local_q = local_q.reshape((bs, sq, -1, 3))
+#        bs, sq, c = local_q.shape
+#        local_q = local_q.reshape((bs, sq, -1, 3))
 
         # AISTPP dataset comes y-up - rotate to z-up to standardize against the pretrain dataset
-        root_q = local_q[:, :, :1, :]  # sequence x 1 x 3
-        root_q_quat = axis_angle_to_quaternion(root_q)
-        rotation = torch.Tensor(
-            [0.7071068, 0.7071068, 0, 0]
-        )  # 90 degrees about the x axis
-        root_q_quat = quaternion_multiply(rotation, root_q_quat)
-        root_q = quaternion_to_axis_angle(root_q_quat)
-        local_q[:, :, :1, :] = root_q
+#        root_q = local_q[:, :, :1, :]  # sequence x 1 x 3
+#        root_q_quat = axis_angle_to_quaternion(root_q)
+#        rotation = torch.Tensor(
+#            [0.7071068, 0.7071068, 0, 0]
+#        )  # 90 degrees about the x axis
+#        root_q_quat = quaternion_multiply(rotation, root_q_quat)
+#        root_q = quaternion_to_axis_angle(root_q_quat)
+#        local_q[:, :, :1, :] = root_q
 
         # don't forget to rotate the root position too 😩
-        pos_rotation = RotateAxisAngle(90, axis="X", degrees=True)
-        root_pos = pos_rotation.transform_points(
-            root_pos
-        )  # basically (y, z) -> (-z, y), expressed as a rotation for readability
+#        pos_rotation = RotateAxisAngle(90, axis="X", degrees=True)
+#        root_pos = pos_rotation.transform_points(
+#            root_pos
+#        )  # basically (y, z) -> (-z, y), expressed as a rotation for readability
 
         # do FK
-        positions = smpl.forward(local_q, root_pos)  # batch x sequence x 24 x 3
-        feet = positions[:, :, (7, 8, 10, 11)]
-        feetv = torch.zeros(feet.shape[:3])
-        feetv[:, :-1] = (feet[:, 1:] - feet[:, :-1]).norm(dim=-1)
-        contacts = (feetv < 0.01).to(local_q)  # cast to right dtype
+#        positions = smpl.forward(local_q, root_pos)  # batch x sequence x 24 x 3
+#        feet = positions[:, :, (7, 8, 10, 11)]
+#        feetv = torch.zeros(feet.shape[:3])
+#        feetv[:, :-1] = (feet[:, 1:] - feet[:, :-1]).norm(dim=-1)
+#        contacts = (feetv < 0.01).to(local_q)  # cast to right dtype
 
         # to 6d
-        local_q = ax_to_6v(local_q)
+#        local_q = ax_to_6v(local_q)
 
         # now, flatten everything into: batch x sequence x [...]
-        l = [contacts, root_pos, local_q]
-        global_pose_vec_input = vectorize_many(l).float().detach()
+#        l = [contacts, root_pos, local_q]
+        #global_pose_vec_input = vectorize_many(d).float().detach()
+
+        d = torch.from_numpy(d)
+        print("Double checking input vector")
+        print(d.shape)
+        global_pose_vec_input = d.float().detach()
 
         # normalize the data. Both train and test need the same normalizer.
         if self.train:
