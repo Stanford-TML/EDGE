@@ -62,9 +62,8 @@ def extractFeats(acceleration_data, windowLength):
     # Time-Frequency Features (using Wavelet Transform)
     coeffs, _ = pywt.cwt(acceleration_data, np.arange(1, 10), 'gaus1')
     coeffs = np.column_stack(coeffs)
-    wavelet_entropy_values = -np.sum(np.abs(coeffs) ** 2 * np.log(np.abs(coeffs) ** 2), axis=1)
 
-    frequencyDescriptives = np.column_stack([fft_values, coeffs, wavelet_entropy_values])
+    frequencyDescriptives = np.column_stack([fft_values, coeffs])
     all2 = frequencyDescriptives
 
     # Signal Magnitude Area (SMA)

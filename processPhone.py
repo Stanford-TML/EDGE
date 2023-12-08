@@ -22,6 +22,10 @@ phoneData = [np.load(f"{directoryIn}{k}") for k in fNames]
 # Convert position to acceleration
 accelerations = [get_second_derivative(x) for x in phoneData]
 
+phoneData[0].shape
+
+#Implement get gyroscope
+
 #Feature extractions
 accelerations = [extractFeats(x, 150) for x in accelerations]
 
@@ -29,6 +33,8 @@ accelerations = [extractFeats(x, 150) for x in accelerations]
 for k in range(len(fNames)):
     fName = f"{directoryOut}{fNames[k]}"
     d = accelerations[k]
-    fileObject = open(fName, 'wb')
-    pkl.dump(d, fileObject)
+    d = np.float32(d)
+#    fileObject = open(fName, 'wb')
+#    pkl.dump(d, fileObject)
+    np.save(fName, d)
     print(f"Wrote file: {k}")

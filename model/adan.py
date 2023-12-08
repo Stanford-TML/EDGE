@@ -49,6 +49,10 @@ class Adan(Optimizer):
                     continue
 
                 data, grad = p.data, p.grad.data
+
+#                print(f"Grad from adan: {grad[0][0]}")
+#                print(f"Data from adan: {data[0][0]}")
+
                 assert not grad.is_sparse
 
                 state = self.state[p]

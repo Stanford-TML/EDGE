@@ -11,8 +11,12 @@ from vis import SMPLSkeleton
 from pytorch3d.transforms import (axis_angle_to_quaternion, quaternion_apply,
                                   quaternion_multiply)
 
+# CONVERTS SMPL REPRESENTATIONS TO POSITIONS, AND CREATES A ROOT FOR THE CENTER OF
+# A PHONE AS THE AVERAGE OF HIP AND KNEE MARKERS
+
 def createPhone(df):
-    phone = (df[:,6:9] + df[:,15:18])/2
+    phone = (df[:,6:9] + df[:,15:18])/2 #Phone root
+    
 #    df = np.concatenate([df, phone], axis = 1)
     return phone
 
@@ -24,8 +28,6 @@ markers = ["root", "lhip", "rhip", "belly", "lknee", "rknee", "spine", "lankle",
 
 smpl = SMPLSkeleton()
 
-
-[print(x) for x in df]
 # to Tensor
 root_pos = torch.Tensor(df['pos'])
 local_q = torch.Tensor(df['q'])

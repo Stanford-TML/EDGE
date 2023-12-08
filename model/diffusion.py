@@ -19,6 +19,8 @@ from vis import skeleton_render
 
 from .utils import extract, make_beta_schedule
 
+import pandas as pd
+
 def identity(t, *args, **kwargs):
     return t
 
@@ -445,22 +447,33 @@ class GaussianDiffusion(nn.Module):
         return sample
 
     def p_losses(self, x_start, cond, t):
-
         noise = torch.randn_like(x_start)
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
 
-        # reconstruct
+        # reconstruct HERE IS THE PROBLEM
+#        print(f"x_noisy: {x_noisy.shape}: {x_noisy[0]}")
+#        print(f"cond: {cond.shape}: {cond[0]}")
+#        print(f"t: {t}")
+
         x_recon = self.model(x_noisy, cond, t, cond_drop_prob=self.cond_drop_prob)
         assert noise.shape == x_recon.shape
 
         model_out = x_recon
+
         if self.predict_epsilon:
             target = noise
         else:
             target = x_start
 
+#        print(f"inside p_losses. x_noisy: {x_noisy}")
+#        print(f"inside p_losses. cond: {cond}")
+#        print(f"inside p_losses. x_recon: {x_recon}")
+#        print(f"inside p_losses. target: {target}")
+
         # full reconstruction loss
         loss = self.loss_fn(model_out, target, reduction="none")
+#        print(f"Model output: {model_out[0]}")
+#        print(f"Model prediction: {target[0]}")
         loss = reduce(loss, "b ... -> b (...)", "mean")
         loss = loss * extract(self.p2_loss_weight, t, loss.shape)
 
@@ -478,7 +491,7 @@ class GaussianDiffusion(nn.Module):
         v_loss = v_loss * extract(self.p2_loss_weight, t, v_loss.shape)
 
         # FK loss
-        b, s, c = model_out.shape
+#        b, s, c = model_out.shape
 
         # unnormalize
 #        model_out = self.normalizer.unnormalize(model_out)
@@ -498,28 +511,13 @@ class GaussianDiffusion(nn.Module):
         fk_loss = reduce(fk_loss, "b ... -> b (...)", "mean")
         fk_loss = fk_loss * extract(self.p2_loss_weight, t, fk_loss.shape)
 
-        # foot skate loss
-#        foot_idx = [7, 8, 10, 11]
-
-        # find static indices consistent with model's own predictions
-#        static_idx = model_contact > 0.95  # N x S x 4
-#        model_feet = model_xp[:, :, foot_idx]  # foot positions (N, S, 4, 3)
-#        model_foot_v = torch.zeros_like(model_feet)
-#        model_foot_v[:, :-1] = (
-#            model_feet[:, 1:, :, :] - model_feet[:, :-1, :, :]
-#        )  # (N, S-1, 4, 3)
-#        model_foot_v[~static_idx] = 0
-#        foot_loss = self.loss_fn(
-#            model_foot_v, torch.zeros_like(model_foot_v), reduction="none"
-#        )
-#        foot_loss = reduce(foot_loss, "b ... -> b (...)", "mean")
-
         losses = (
             0.636 * loss.mean(),
             2.964 * v_loss.mean(),
             0.646 * fk_loss.mean(),
-#            10.942 * foot_loss.mean(),
         )
+
+        print(f"Summarized losses: {losses}")
         return sum(losses), losses
 
     def loss(self, x, cond, t_override=None):
@@ -551,7 +549,7 @@ class GaussianDiffusion(nn.Module):
         render_out,
         fk_out=None,
         name=None,
-        sound=True,
+        sound=False,
         mode="normal",
         noise=None,
         constraint=None,
@@ -584,104 +582,14 @@ class GaussianDiffusion(nn.Module):
 
         samples = normalizer.unnormalize(samples)
 
-        if samples.shape[2] == 151:
-            sample_contact, samples = torch.split(
-                samples, (4, samples.shape[2] - 4), dim=2
-            )
-        else:
-            sample_contact = None
-        # do the FK all at once
-        b, s, c = samples.shape
-        pos = samples[:, :, :3].to(cond.device)  # np.zeros((sample.shape[0], 3))
-        q = samples[:, :, 3:].reshape(b, s, 24, 6)
-        # go 6d to ax
-        q = ax_from_6v(q).to(cond.device)
+        q = samples
+        pos = samples
+        print("Trying to predict")
+        print(q)
+        print(pos.shape)
 
-        if mode == "long":
-            b, s, c1, c2 = q.shape
-            assert s % 2 == 0
-            half = s // 2
-            if b > 1:
-                # if long mode, stitch position using linear interp
-
-                fade_out = torch.ones((1, s, 1)).to(pos.device)
-                fade_in = torch.ones((1, s, 1)).to(pos.device)
-                fade_out[:, half:, :] = torch.linspace(1, 0, half)[None, :, None].to(
-                    pos.device
-                )
-                fade_in[:, :half, :] = torch.linspace(0, 1, half)[None, :, None].to(
-                    pos.device
-                )
-
-                pos[:-1] *= fade_out
-                pos[1:] *= fade_in
-
-                full_pos = torch.zeros((s + half * (b - 1), 3)).to(pos.device)
-                idx = 0
-                for pos_slice in pos:
-                    full_pos[idx : idx + s] += pos_slice
-                    idx += half
-
-                # stitch joint angles with slerp
-                slerp_weight = torch.linspace(0, 1, half)[None, :, None].to(pos.device)
-
-                left, right = q[:-1, half:], q[1:, :half]
-                # convert to quat
-                left, right = (
-                    axis_angle_to_quaternion(left),
-                    axis_angle_to_quaternion(right),
-                )
-                merged = quat_slerp(left, right, slerp_weight)  # (b-1) x half x ...
-                # convert back
-                merged = quaternion_to_axis_angle(merged)
-
-                full_q = torch.zeros((s + half * (b - 1), c1, c2)).to(pos.device)
-                full_q[:half] += q[0, :half]
-                idx = half
-                for q_slice in merged:
-                    full_q[idx : idx + half] += q_slice
-                    idx += half
-                full_q[idx : idx + half] += q[-1, half:]
-
-                # unsqueeze for fk
-                full_pos = full_pos.unsqueeze(0)
-                full_q = full_q.unsqueeze(0)
-            else:
-                full_pos = pos
-                full_q = q
-            full_pose = (
-                self.smpl.forward(full_q, full_pos).detach().cpu().numpy()
-            )  # b, s, 24, 3
-            # squeeze the batch dimension away and render
-            skeleton_render(
-                full_pose[0],
-                epoch=f"{epoch}",
-                out=render_out,
-                name=name,
-                sound=sound,
-                stitch=True,
-                sound_folder=sound_folder,
-                render=render
-            )
-            if fk_out is not None:
-                outname = f'{epoch}_{"_".join(os.path.splitext(os.path.basename(name[0]))[0].split("_")[:-1])}.pkl'
-                Path(fk_out).mkdir(parents=True, exist_ok=True)
-                pickle.dump(
-                    {
-                        "smpl_poses": full_q.squeeze(0).reshape((-1, 72)).cpu().numpy(),
-                        "smpl_trans": full_pos.squeeze(0).cpu().numpy(),
-                        "full_pose": full_pose[0],
-                    },
-                    open(os.path.join(fk_out, outname), "wb"),
-                )
-            return
-
-        poses = self.smpl.forward(q, pos).detach().cpu().numpy()
-        sample_contact = (
-            sample_contact.detach().cpu().numpy()
-            if sample_contact is not None
-            else None
-        )
+        pd.DataFrame(pos[0]).to_csv(f"./generatedDance/test_{epoch}_1.csv", index = False, header = False)
+        pd.DataFrame(pos[1]).to_csv(f"./generatedDance/test_{epoch}_2.csv", index = False, header = False)
 
         def inner(xx):
             num, pose = xx
@@ -695,8 +603,6 @@ class GaussianDiffusion(nn.Module):
                 sound=sound,
                 contact=contact,
             )
-
-        p_map(inner, enumerate(poses))
 
         if fk_out is not None and mode != "long":
             Path(fk_out).mkdir(parents=True, exist_ok=True)

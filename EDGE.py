@@ -6,6 +6,7 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+from torch.nn.utils import clip_grad_norm_
 import wandb
 from accelerate import Accelerator, DistributedDataParallelKwargs
 from accelerate.state import AcceleratorState
@@ -42,7 +43,8 @@ class EDGE:
         self.accelerator = Accelerator(kwargs_handlers=[ddp_kwargs])
         state = AcceleratorState()
         num_processes = state.num_processes
-        use_baseline_feats = feature_type == "baseline"
+#        use_baseline_feats = feature_type == "baseline"
+        use_baseline_feats = True
 
         pos_dim = 3
 #        rot_dim = 24 * 6  # 24 joints, 6dof
@@ -51,7 +53,7 @@ class EDGE:
         self.repr_dim = repr_dim = rot_dim #pos_dim + rot_dim + 4
 
 #        feature_dim = 35 if use_baseline_feats else 4800
-        feature_dim = 3
+        feature_dim = 75 #For accelerometer features
 
         horizon_seconds = 5
         FPS = 30
@@ -59,6 +61,7 @@ class EDGE:
 
         self.accelerator.wait_for_everyone()
 
+        #Loading model checkpoint
         checkpoint = None
         if checkpoint_path != "":
             checkpoint = torch.load(
@@ -127,35 +130,23 @@ class EDGE:
         test_tensor_dataset_path = os.path.join(
             opt.processed_data_dir, f"test_tensor_dataset.pkl"
         )
-        if (
-#            not opt.no_cache
-#            and os.path.isfile(train_tensor_dataset_path)
-#            and os.path.isfile(test_tensor_dataset_path)
-             False #Force load of dataset not cached
-        ):
-            print(train_tensor_dataset_path)
-            train_dataset = pickle.load(open(train_tensor_dataset_path, "rb"))
-            test_dataset = pickle.load(open(test_tensor_dataset_path, "rb"))
-        else:
-            print("Fetching data from:")
-            print(opt.data_path)
-            train_dataset = AISTPPDataset(
-                data_path=opt.data_path,
-                backup_path=opt.processed_data_dir,
-                train=True,
-                force_reload=opt.force_reload,
-            )
-            test_dataset = AISTPPDataset(
-                data_path=opt.data_path,
-                backup_path=opt.processed_data_dir,
-                train=False,
-                normalizer=train_dataset.normalizer,
-                force_reload=opt.force_reload,
-            )
-            # cache the dataset in case
-            if self.accelerator.is_main_process:
-                pickle.dump(train_dataset, open(train_tensor_dataset_path, "wb"))
-                pickle.dump(test_dataset, open(test_tensor_dataset_path, "wb"))
+        train_dataset = AISTPPDataset(
+            data_path=opt.data_path,
+            backup_path=opt.processed_data_dir,
+            train=True,
+            force_reload=opt.force_reload,
+        )
+        test_dataset = AISTPPDataset(
+            data_path=opt.data_path,
+            backup_path=opt.processed_data_dir,
+            train=False,
+            normalizer=train_dataset.normalizer,
+            force_reload=opt.force_reload,
+        )
+        # cache the dataset in case
+        if self.accelerator.is_main_process:
+            pickle.dump(train_dataset, open(train_tensor_dataset_path, "wb"))
+            pickle.dump(test_dataset, open(test_tensor_dataset_path, "wb"))
 
         # set normalizer
         self.normalizer = test_dataset.normalizer
@@ -210,8 +201,12 @@ class EDGE:
                 total_loss, (loss, v_loss, fk_loss) = self.diffusion(
                     x, cond, t_override=None
                 )
+
                 self.optim.zero_grad()
                 self.accelerator.backward(total_loss)
+
+#                max_grad_norm = 0.5
+#                clip_grad_norm_(self.model.parameters(), max_grad_norm)
 
                 self.optim.step()
 
@@ -226,7 +221,8 @@ class EDGE:
                             self.diffusion.master_model, self.diffusion.model
                         )
             # Save model
-            if (epoch % opt.save_interval) == 0:
+#            if (epoch % opt.save_interval) == 0:
+            if True: #Force save weights every epoch
                 # everyone waits here for the val loop to finish ( don't start next train epoch early)
                 self.accelerator.wait_for_everyone()
                 # save only if on main thread
@@ -252,7 +248,8 @@ class EDGE:
                         "optimizer_state_dict": self.optim.state_dict(),
                         "normalizer": self.normalizer,
                     }
-                    torch.save(ckpt, os.path.join(wdir, f"train-{epoch}.pt"))
+                    wdir = "./weights/" #User code. Force save weights path
+                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint.pt"))
                     # generate a sample
                     render_count = 2
                     shape = (render_count, self.horizon, self.repr_dim)
@@ -260,12 +257,13 @@ class EDGE:
                     # draw a music from the test dataset
                     (x, cond, filename, wavnames) = next(iter(test_data_loader))
                     cond = cond.to(self.accelerator.device)
+                    pathOut = "./generatedDance/"
                     self.diffusion.render_sample(
                         shape,
                         cond[:render_count],
                         self.normalizer,
                         epoch,
-                        os.path.join(opt.render_dir, "train_" + opt.exp_name),
+                        os.path.join(pathOut, "train_" + opt.exp_name),
                         name=wavnames[:render_count],
                         sound=True,
                     )
@@ -289,7 +287,7 @@ class EDGE:
             label,
             render_dir,
             name=wavname[:render_count],
-            sound=True,
+            sound=False,
             mode="long",
             fk_out=fk_out,
             render=render
