@@ -459,7 +459,7 @@ class GaussianDiffusion(nn.Module):
         assert noise.shape == x_recon.shape
 
         model_out = x_recon
-
+        print(f"Loss shape of output {model_out.shape}")
         if self.predict_epsilon:
             target = noise
         else:

@@ -110,21 +110,13 @@ class AISTPPDataset(Dataset):
         #   |    |- wavs
 
         motion_path = os.path.join(split_data_path, "motions_sliced")
-        sound_path = os.path.join(split_data_path, f"baseline_feats") #fixed directory
+        baseline_path = os.path.join(split_data_path, f"baseline_feats") #fixed directory
         wav_path = os.path.join(split_data_path, f"wavs_sliced")
-
-        print(f"Motion: {motion_path}")
-        print(f"Sound: {sound_path}")
-        print(f"Wav: {wav_path}")
 
         # sort motions and sounds
         motions = sorted(glob.glob(os.path.join(motion_path, "*.pkl")))
-        features = sorted(glob.glob(os.path.join(sound_path, "*.npy")))
+        features = sorted(glob.glob(os.path.join(baseline_path, "*.npy")))
         wavs = sorted(glob.glob(os.path.join(wav_path, "*.wav")))
-
-        print(f"Motion: {len(motions)}")
-        print(f"Sound: {len(features)}")
-        print(f"Wav: {len(wavs)}")
 
         # stack the motions and features together
         all_pos = []
@@ -153,11 +145,13 @@ class AISTPPDataset(Dataset):
 
         all_pos = np.array(all_pos)  # N x seq x 3
 #        all_q = np.array(all_q)  # N x seq x (joint * 3)
+
         # downsample the motions to the data fps
-        print(all_pos.shape)
-        all_pos = all_pos[:, :: self.data_stride, :]
+        all_pos = all_pos[:, :: self.data_stride, :] #Prevent downsampling
+        print(f"Shape input load_aistpp: {all_pos.shape}")
+
 #        all_q = all_q[:, :: self.data_stride, :]
-        data = {"pos": all_pos, "q": all_q, "filenames": all_names, "wavs": all_wavs}
+#        data = {"pos": all_pos, "q": all_q, "filenames": all_names, "wavs": all_wavs}
         data = {"pos": all_pos, "filenames": all_names, "wavs": all_wavs}
         return data
 
@@ -203,8 +197,7 @@ class AISTPPDataset(Dataset):
         #global_pose_vec_input = vectorize_many(d).float().detach()
 
         d = torch.from_numpy(d)
-        print("Double checking input vector")
-        print(d.shape)
+
         global_pose_vec_input = d.float().detach()
 
         # normalize the data. Both train and test need the same normalizer.

@@ -52,8 +52,10 @@ def slice_motion(motion_file, stride, length, num_slices, out_dir):
 def slice_aistpp(motion_dir, wav_dir, stride=0.5, length=5):
     wavs = sorted(glob.glob(f"{wav_dir}/*.wav"))
     motions = sorted(glob.glob(f"{motion_dir}/*.pkl"))
+#    wav_out = wav_dir + "_sliced"
+#    motion_out = motion_dir + "_sliced"
     wav_out = wav_dir + "_sliced"
-    motion_out = motion_dir + "_sliced"
+    motion_out = motion_dir + "_sliced_original"
     os.makedirs(wav_out, exist_ok=True)
     os.makedirs(motion_out, exist_ok=True)
     assert len(wavs) == len(motions)

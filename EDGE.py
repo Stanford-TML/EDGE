@@ -124,12 +124,6 @@ class EDGE:
 
     def train_loop(self, opt):
         # load datasets
-        train_tensor_dataset_path = os.path.join(
-            opt.processed_data_dir, f"train_tensor_dataset.pkl"
-        )
-        test_tensor_dataset_path = os.path.join(
-            opt.processed_data_dir, f"test_tensor_dataset.pkl"
-        )
         train_dataset = AISTPPDataset(
             data_path=opt.data_path,
             backup_path=opt.processed_data_dir,
@@ -143,10 +137,10 @@ class EDGE:
             normalizer=train_dataset.normalizer,
             force_reload=opt.force_reload,
         )
-        # cache the dataset in case
-        if self.accelerator.is_main_process:
-            pickle.dump(train_dataset, open(train_tensor_dataset_path, "wb"))
-            pickle.dump(test_dataset, open(test_tensor_dataset_path, "wb"))
+#        cache the dataset in case
+#        if self.accelerator.is_main_process:
+#            pickle.dump(train_dataset, open(train_tensor_dataset_path, "wb"))
+#            pickle.dump(test_dataset, open(test_tensor_dataset_path, "wb"))
 
         # set normalizer
         self.normalizer = test_dataset.normalizer
@@ -197,6 +191,9 @@ class EDGE:
             for step, (x, cond, filename, wavnames) in enumerate(
                 load_loop(train_data_loader)
             ):
+                print("HERE:")
+                print(x.shape)
+                print(cond.shape)
 #                total_loss, (loss, v_loss, fk_loss, foot_loss) = self.diffusion(
                 total_loss, (loss, v_loss, fk_loss) = self.diffusion(
                     x, cond, t_override=None
