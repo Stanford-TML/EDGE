@@ -10,11 +10,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import reduce
 from p_tqdm import p_map
-from pytorch3d.transforms import (axis_angle_to_quaternion,
-                                  quaternion_to_axis_angle)
+#from pytorch3d.transforms import (axis_angle_to_quaternion,
+#                                  quaternion_to_axis_angle)
 from tqdm import tqdm
 
-from dataset.quaternion import ax_from_6v, quat_slerp
+#from dataset.quaternion import ax_from_6v, quat_slerp
 from vis import skeleton_render
 
 from .utils import extract, make_beta_schedule

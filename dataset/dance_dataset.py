@@ -8,9 +8,9 @@ from typing import Any
 
 import numpy as np
 import torch
-from pytorch3d.transforms import (RotateAxisAngle, axis_angle_to_quaternion,
-                                  quaternion_multiply,
-                                  quaternion_to_axis_angle)
+#from pytorch3d.transforms import (RotateAxisAngle, axis_angle_to_quaternion,
+#                                  quaternion_multiply,
+#                                  quaternion_to_axis_angle)
 from torch.utils.data import Dataset
 
 from dataset.preprocess import Normalizer, vectorize_many
