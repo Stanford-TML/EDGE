@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import Dataset
 
 from dataset.preprocess import Normalizer, vectorize_many
-from dataset.quaternion import ax_to_6v
+#from dataset.quaternion import ax_to_6v
 from vis import SMPLSkeleton
 
 
