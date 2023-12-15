@@ -3,8 +3,8 @@ from EDGE import EDGE
 
 
 def train(opt):
-    model = EDGE(opt.feature_type, "./weights/train-1.pt")
-#    model = EDGE(opt.feature_type)
+#    model = EDGE(opt.feature_type, "./weights/train-1.pt")
+    model = EDGE(opt.feature_type)
     model.train_loop(opt)
 
 

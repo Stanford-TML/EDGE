@@ -550,7 +550,7 @@ class GaussianDiffusion(nn.Module):
         fk_out=None,
         name=None,
         sound=False,
-        mode="normal",
+        mode="long",
         noise=None,
         constraint=None,
         sound_folder="ood_sliced",
@@ -584,12 +584,14 @@ class GaussianDiffusion(nn.Module):
 
         q = samples
         pos = samples
-        print("Trying to predict")
-        print(q)
-        print(pos.shape)
 
-        pd.DataFrame(pos[0]).to_csv(f"./generatedDance/test_{epoch}_1.csv", index = False, header = False)
-        pd.DataFrame(pos[1]).to_csv(f"./generatedDance/test_{epoch}_2.csv", index = False, header = False)
+        pos = pos.reshape(-1, 72)
+        pd.DataFrame(pos).to_csv(name[0], index = False, header = False)
+
+        print(f"Predicted output of shape: {pos.shape}")
+        print(f"Name here: {name}")
+          
+#        pd.DataFrame(pos[1]).to_csv(f"./generatedDance/test_{epoch}_2.csv", index = False, header = False)
 
         def inner(xx):
             num, pose = xx

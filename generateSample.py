@@ -1,7 +1,7 @@
 from EDGE import EDGE
 from torch.utils.data import DataLoader
 
-model = EDGE("baseline", "./weights/train-1.pt")
+model = EDGE("baseline", "./weights/train_checkpoint.pt")
 model.eval()
 
 train_data_loader = DataLoader("./data/test/gBR_sBM_cAll_d04_mBR0_ch02_slice0.npy")

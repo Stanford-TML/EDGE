@@ -16,6 +16,8 @@ from EDGE import EDGE
 from data.audio_extraction.baseline_features import extract as baseline_extract
 from data.audio_extraction.jukebox_features import extract as juke_extract
 
+from data.phoneProcess.customFeatureExtract import *
+
 import pandas as pd
 import numpy as np
 
@@ -41,50 +43,49 @@ stringintkey = cmp_to_key(stringintcmp_)
 
 
 def test(opt):
-#    feature_func = juke_extract if opt.feature_type == "jukebox" else baseline_extract
-#    sample_length = opt.out_length
-#    sample_size = int(sample_length / 2.5) - 1
-
     temp_dir_list = []
     all_cond = []
     all_filenames = []
     print("Using precomputed features")
-    # all subdirectories
-#    dir_list = glob.glob(os.path.join(opt.feature_cache_dir, "*/"))
-    inputsPath = "./data/test/baseline_feats/"
-    fNames = os.listdir(inputsPath)
-    index = np.random.randint(len(fNames))
 
-    file = [np.load(f"{inputsPath}{fNames[index]}")]
-    file = torch.from_numpy(np.array(file))
+    inputsPath = "./generatedDance/custom/"
+    fNames = ["phoneNormalizedUnMatch.csv", "phoneNormalizedMatch.csv"]
+  
+    file = [] 
+    for j in fNames:
+       #Extract features
+        df = pd.read_csv(f"{inputsPath}{j}")
+        df = df.to_numpy()
 
-    file.shape
+        print(df.shape)
+        df = get_second_derivative(df)
+        df = extractFeats(df, df.shape[0])
+        print(f"Shape of input is: {df.shape}")
+
+        filE = np.array([df])
+        filE = np.float32(filE)
+        filE = torch.from_numpy(filE)
+
+        print(filE.shape)
+        filE = filE.reshape(2, 150, -1)
+        print(filE.shape)
+
+        file.append(filE)
+
+    fk_out = None
 
     model = EDGE(opt.feature_type, "./weights/train_checkpoint.pt")
     model.eval()
 
-    # directory for optionally saving the dances for eval
-    fk_out = None
-    if opt.save_motions:
-        fk_out = opt.motion_save_dir
-
-    fileName = [fNames[index].replace(".npy", "")]
-    render_dir = "./generatedDance/pairGenerated/"
-
-    os.makedirs(render_dir, exist_ok=True)
+    fileNames = ["./generatedDance/custom/predictedFullUnMatch.csv", "./generatedDance/custom/predictedFullMatch.csv"]
+    render_dir = "./generatedDance/custom/"
 
     print("Generating dances")
-    data_tuple = None, file, fileName
-    model.render_sample(
-        data_tuple, fileName, render_dir, render_count=-1, fk_out=fk_out, render=True
-    )
-
-    f = f"{fNames[index]}".replace("npy", "pkl")
-    d = pd.read_pickle(f"./data/test/motions_sliced/{f}")
-    d = d[:: 2, :]
-    d = pd.DataFrame(d)
-    f2 = f.replace("pkl", "csv")
-    d.to_csv(f"{render_dir}true_{f2}", index = False, header = False)
+    for k in range(len(fileNames)):
+        data_tuple = None, file[k], [fileNames[k]]
+        model.render_sample(
+            data_tuple, k, render_dir, render_count=-1, fk_out=fk_out, render=True
+        )
 
     print("Done")
     torch.cuda.empty_cache()
