@@ -17,14 +17,14 @@ def getMarker(npMatrix, mNumber):
     npMatrix = npMatrix[:,markerIndexes]
     return npMatrix
 
-def createPhone(df):
-    rightHip = getMarker(df, 2)
-    rightKnee = getMarker(df, 5)
-    leftHip = getMarker(df, 1)
-    phone = (rightHip + rightKnee)/2 #Phone root calculated between right hip and knee markers
-    phoneUp = (phone+rightHip)/2 #Up of phone calculated between root of phone and right hip
-    middleHip = (leftHip + rightHip)/2
-    phoneLateral = (middleHip + rightKnee)/2;
+def createPhone(df, rightHipMarker = 2, rightKneeMarker = 5, leftHipMarker = 1):
+    rightHip = getMarker(df, rightHipMarker)
+    rightKnee = getMarker(df, rightKneeMarker)
+    leftHip = getMarker(df, leftHipMarker)
+    phone = np.add(rightHip, rightKnee)/2 #Phone root calculated between right hip and knee markers
+    phoneUp = np.add(phone, rightHip)/2 #Up of phone calculated between root of phone and right hip
+    middleHip = np.add(leftHip, rightHip)/2
+    phoneLateral = np.add(middleHip, rightKnee)/2;
     entirePhone = np.concatenate((phone, phoneUp, phoneLateral), axis = 1)
     return entirePhone
 
@@ -73,31 +73,55 @@ def extractPhoneFeatures(train):
     os.makedirs(directoryOut, exist_ok=True)
     files = os.listdir(directoryIn)
     for k in files:
-        phone = pd.read_pickle(f"{directoryIn}{k}")
-        gyro = extractGyro(phone)
-        phone = getMarker(phone, 0) #Getting root for acceleration
-
+        phone = pd.read_csv(f"{directoryIn}{k}")
+#        gyro = extractGyro(phone)
+#        phone = getMarker(phone, 0) #Getting root for acceleration
         #Concatenate phone root + gyro. Should result in a six dimensions array
-        phone = np.concatenate((phone, gyro), axis = 1)
-
+#        phone = np.concatenate((phone, gyro), axis = 1)
         assert phone.shape[1] == 6
-
         #Downsampling to half
+        phone = phone.to_numpy()
         phone = phone[:: 2, :]         
-
         #Position to accel and angles to angular velocity
-        df = get_second_derivative(phone)
-
-        df = extractFeats(df, df.shape[0])
+#        df = get_second_derivative(phone)
+        df = extractFeats(phone, phone.shape[0])
         df = np.float32(df)
         fName = f"{directoryOut}{k}"
-        fName = fName.replace("pkl", "npy")
+        fName = fName.replace(".csv", ".npy")
         np.save(fName, df)
-        print(f"Wrote file: {k}")
+        print(f"Wrote file: {fName}")
 
+#Processing AIST++ dataset
 for k in ["train", "test"]:
-    writePhonePositions(k)
-    print(f"Finished extracting features of {k}")
     extractPhoneFeatures(k)
-    print(f"Finished extracting features of {k}")
+#for k in ["test"]:
+#    writePhonePositions(k)
+#    print(f"Finished extracting features of {k}")
+#    print(f"Finished extracting features of {k}")
+
+#Processing Brigitta's dataset
+#dirIn = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/convertedCSV/"
+#dirOut = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneExtracted/"
+#allFiles = os.listdir(dirIn)
+#rightHipMarker = 1; rightKneeMarker = 2; leftHipMarker = 5 #Confirmed from Briggitta's data
+#for k in allFiles:
+#    df = pd.read_csv(f"{dirIn}{k}")
+#    df = np.array(df)
+#    ph = createPhone(df, rightHipMarker, rightKneeMarker, leftHipMarker)
+#    gyro = extractGyro(ph)
+#    ph = getMarker(ph, 0) #Getting root of phone for acceleration
+#    ph = ph/100 #Rescaling to match dataset
+#    ph = np.concatenate((ph, gyro), axis = 1)
+#    assert ph.shape[1] == 6
+#    ph = ph[:: 2, :]         
+#    df = get_second_derivative(ph)
+#    df = extractFeats(df, df.shape[0])
+#    df = np.float32(df)
+#    fName = f"{dirOut}{k}"
+#    fName = fName.replace("csv", "npy")
+#    if ("beat" in fName) == False:
+#        np.save(fName, df)
+#    else:
+#        print("Not saving cause of beat")
+
 

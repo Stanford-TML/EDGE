@@ -550,7 +550,7 @@ class GaussianDiffusion(nn.Module):
         fk_out=None,
         name=None,
         sound=False,
-        mode="long",
+        mode="normal",
         noise=None,
         constraint=None,
         sound_folder="ood_sliced",
@@ -584,6 +584,9 @@ class GaussianDiffusion(nn.Module):
 
         q = samples
         pos = samples
+        
+        print(f"Predicted output of shape: {pos.shape}")
+        print(f"Name here: {name}")
 
         pos = pos.reshape(-1, 72)
         pd.DataFrame(pos).to_csv(name[0], index = False, header = False)

@@ -60,7 +60,7 @@ def test(opt):
 
     file.shape
 
-    model = EDGE(opt.feature_type, "./weights/train_checkpoint.pt")
+    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro.pt")
     model.eval()
 
     # directory for optionally saving the dances for eval

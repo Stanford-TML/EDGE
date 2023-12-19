@@ -272,7 +272,7 @@ class EDGE:
         self, data_tuple, label, render_dir, render_count=-1, fk_out=None, render=True
     ):
         _, cond, wavname = data_tuple
-        assert len(cond.shape) == 3
+#        assert len(cond.shape) == 3
         if render_count < 0:
             render_count = len(cond)
         shape = (render_count, self.horizon, self.repr_dim)

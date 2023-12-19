@@ -21,9 +21,10 @@ from data.phoneProcess.customFeatureExtract import *
 import pandas as pd
 import numpy as np
 
+import random
+
 # sort filenames that look like songname_slice{number}.ext
 key_func = lambda x: int(os.path.splitext(x)[0].split("_")[-1].split("slice")[-1])
-
 
 def stringintcmp_(a, b):
     aa, bb = "".join(a.split("_")[:-1]), "".join(b.split("_")[:-1])
@@ -38,9 +39,7 @@ def stringintcmp_(a, b):
         return 1
     return 0
 
-
 stringintkey = cmp_to_key(stringintcmp_)
-
 
 def test(opt):
     temp_dir_list = []
@@ -48,36 +47,47 @@ def test(opt):
     all_filenames = []
     print("Using precomputed features")
 
-    inputsPath = "./generatedDance/custom/"
-    fNames = ["phoneNormalizedUnMatch.csv", "phoneNormalizedMatch.csv"]
-  
+    dirPhoneInput = "../data/CoE/accel/brigittaData/phoneExtracted/"
+    phoneInput = os.listdir(dirPhoneInput)
+    dirFullBody = "../data/CoE/accel/brigittaData/convertedCSV/"
+
+    matchIndex, unMatchIndex = random.sample(range(100), 2)
+
+    caseRead = phoneInput[matchIndex].replace(".npy", "")
+
+    features = np.load(f"{dirPhoneInput}{caseRead}.npy")
+    features = pd.DataFrame(features)
+    fullBody = pd.read_csv(f"{dirFullBody}{caseRead}.csv")
+
+    randomInit = np.random.randint(100, features.shape[0]-150)
+    features = features.iloc[randomInit:(randomInit+151), :]
+    fullBody = fullBody.iloc[randomInit:(randomInit+301), :]
+    fullBody = fullBody.to_numpy()
+    fullBody = fullBody[:: 2, :] #Downsample
+    fullBody = pd.DataFrame(fullBody)
+
+    features.to_csv("./generatedDance/custom/phoneNormalizedMatch.csv", index = False, header = False)
+    fullBody.to_csv("./generatedDance/custom/groundTruthMatch.csv", index = False, header = False)
+
+    inputsPath = "./data/generatedDance/custom/"
+    fNames = ["phoneNormalizedMatch.csv"]
+
     file = [] 
     for j in fNames:
        #Extract features
-        df = pd.read_csv(f"{inputsPath}{j}")
+        df = pd.read_csv(f"./generatedDance/custom/{j}")
         df = df.to_numpy()
-
-        print(df.shape)
-        df = get_second_derivative(df)
-        df = extractFeats(df, df.shape[0])
+        df = np.float32(df)
         print(f"Shape of input is: {df.shape}")
-
-        filE = np.array([df])
-        filE = np.float32(filE)
-        filE = torch.from_numpy(filE)
-
-        print(filE.shape)
-        filE = filE.reshape(2, 150, -1)
-        print(filE.shape)
-
-        file.append(filE)
+        df = torch.from_numpy(df)
+        file.append(df)
 
     fk_out = None
 
-    model = EDGE(opt.feature_type, "./weights/train_checkpoint.pt")
+    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro.pt")
     model.eval()
 
-    fileNames = ["./generatedDance/custom/predictedFullUnMatch.csv", "./generatedDance/custom/predictedFullMatch.csv"]
+    fileNames = ["./generatedDance/custom/predictedFullMatch.csv"]
     render_dir = "./generatedDance/custom/"
 
     print("Generating dances")

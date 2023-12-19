@@ -44,40 +44,51 @@ def test(opt):
     sample_length = opt.out_length
     sample_size = int(sample_length / 2.5) - 1
     
-    sample_size = 3
+    sample_size = 1
     print(f"Sample size {sample_size}")
 
-    inputsPath = "./generatedDance/custom/"
-#    all_filenames = ["phoneNormalizedUnMatch.csv", "phoneNormalizedMatch.csv"]
-    all_filenames = ["phoneNormalizedMatch.csv"]
+    dirPhoneInput = "../data/CoE/accel/brigittaData/phoneExtracted/"
+    phoneInput = os.listdir(dirPhoneInput)
+    dirFullBody = "../data/CoE/accel/brigittaData/convertedCSV/"
 
-    print("Using precomputed features")
-    # all subdirectories
+    matchIndex, unMatchIndex = random.sample(range(100), 2)
 
+    caseRead = phoneInput[matchIndex].replace(".npy", "")
+
+    features = np.load(f"{dirPhoneInput}{caseRead}.npy")
+    features = pd.DataFrame(features)
+    fullBody = pd.read_csv(f"{dirFullBody}{caseRead}.csv")
+
+    randomInit = np.random.randint(100, features.shape[0]-150)
+    features = features.iloc[randomInit:(randomInit+151), :]
+    fullBody = fullBody.iloc[randomInit:(randomInit+301), :]
+    fullBody = fullBody.to_numpy()
+    fullBody = fullBody[:: 2, :] #Downsample
+    fullBody = pd.DataFrame(fullBody)
+
+    features.to_csv("./generatedDance/custom/phoneNormalizedMatch.csv", index = False, header = False)
+    fullBody.to_csv("./generatedDance/custom/groundTruthMatch.csv", index = False, header = False)
+
+    inputsPath = "./data/generatedDance/custom/"
+    fNames = ["phoneNormalizedMatch.csv"]
   
     all_cond = [] 
-    for j in all_filenames:
+    for j in fNames:
        #Extract features
-        df = pd.read_csv(f"{inputsPath}{j}")
+        df = pd.read_csv(f"./generatedDance/custom/{j}")
         df = df.to_numpy()
 
-        print(df.shape)
-        df = get_second_derivative(df)
-        df = extractFeats(df, df.shape[0])
-        print(f"Shape of input is: {df.shape}")
-
-        filE = np.array([df])
-        filE = np.float32(filE)
+        filE = np.float32(df)
         filE = torch.from_numpy(filE)
 
         print(filE.shape)
-        fileE = filE.reshape(2, 150, -1)
+        fileE = filE.reshape(1, 150, -1)
+        print(filE.shape)
 
         all_cond.append(fileE)
 
 
-
-    model = EDGE(opt.feature_type, "./weights/train_checkpoint.pt")
+    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro.pt")
     model.eval()
 
     # directory for saving the dances
@@ -89,7 +100,7 @@ def test(opt):
     print("Generating dances")
     for i in range(len(all_cond)):
         data_tuple = None, all_cond[i], [fileNames[i]]
-        print(f"Inputing file: {all_filenames[i]}")
+        print(f"Inputing file: {fNames[i]}")
         model.render_sample(
 #            data_tuple, "test", opt.render_dir, render_count=-1, fk_out=fk_out, render=not opt.no_render
             data_tuple, i, render_dir, render_count=-1, fk_out=fk_out, render=True
