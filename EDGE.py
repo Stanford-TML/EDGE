@@ -218,8 +218,8 @@ class EDGE:
                             self.diffusion.master_model, self.diffusion.model
                         )
             # Save model
-#            if (epoch % opt.save_interval) == 0:
-            if True: #Force save weights every epoch
+            if (epoch % 200) == 0: #Save model every 200 epochs
+#            if True: #Force save weights every epoch
                 # everyone waits here for the val loop to finish ( don't start next train epoch early)
                 self.accelerator.wait_for_everyone()
                 # save only if on main thread
@@ -246,9 +246,9 @@ class EDGE:
                         "normalizer": self.normalizer,
                     }
                     wdir = "./weights/" #User code. Force save weights path
-                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint.pt"))
+                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint_{epoch}.pt"))
                     # generate a sample
-                    render_count = 2
+                    render_count = 1
                     shape = (render_count, self.horizon, self.repr_dim)
                     print("Generating Sample")
                     # draw a music from the test dataset
