@@ -65,11 +65,11 @@ def extractPhoneFeatures(directoryIn, directoryOut, brigitta = False):
 
 #Processing AIST++ dataset
 #for k in ["train", "test"]:
-#    directoryIn = f"../../data/{train}/positionsPhone/"
-#    directoryOut = f"../../data/{train}/baseline_feats/"
-#    extractPhoneFeatures(directoryIn, directoryOut)
+#    directoryIn = f"../../data/{k}/positionsPhone/"
+#    directoryOut = f"../../data/{k}/baseline_feats/"
+#    extractPhoneFeatures(directoryIn, directoryOut, False)
 
 #Processing brigitta's dataset
 dirIn = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneIMU/"
 dirOut = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneFeatures/"
-extractPhoneFeatures(dirIn, dirOut)
+extractPhoneFeatures(dirIn, dirOut, True)

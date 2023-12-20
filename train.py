@@ -3,7 +3,7 @@ from EDGE import EDGE
 
 
 def train(opt):
-    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro_1000.pt")
+    model = EDGE(feature_type = opt.feature_type, checkpoint_path = "./weights/train_checkpoint_gyro_1000.pt")
 #    model = EDGE(opt.feature_type)
     model.train_loop(opt)
 

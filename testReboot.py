@@ -54,7 +54,6 @@ def test(opt):
         phoneInput = os.listdir(dirPhoneInput)
         dirFullBody = "../data/CoE/accel/brigittaData/convertedCSV/"
 
-
         #Selected subset of dances for eval
         phoneInput = ["58-LilyLaine_16", "12-HannaKuisma_21", "16-MikkoValtonen_ 03", "37-LeenaHjelt_beat_140", "50-JattaSavolainen_24", "36-SuviKulo_02", "46-KarlollinaKatainen_12", "46-KarlollinaKatainen_06", "47-EeviAntila_21", "57-AnnaNuoritimo_01", "01-MarjoPeltomaa_19", "48-MariaLaakso_18", "37-LeenaHjelt_02", "14-JohannaLaukkanen_20", "50-JattaSavolainen_16", "58-LilyLaine_20", "01-MarjoPeltomaa_06", "47-EeviAntila_14", "50-JattaSavolainen_ 03", "06-SariLiukkonen_ 03", "24-HeliTikkala_beat_140", "48-MariaLaakso_beatpractice_110", "11-JonnaAaltonen_24", "25-MesimaariaLammi_01", "11-JonnaAaltonen_beatpractice_110", "25-MesimaariaLammi_beatpractice_110", "03-HannaMarkuksela_beat_120", "30-KaisaPeltonen_12", "30-KaisaPeltonen_09", "47-EeviAntila_23", "24-HeliTikkala_10"]
 
@@ -64,13 +63,20 @@ def test(opt):
         features = np.load(f"{dirPhoneInput}{caseRead}.npy")
         features = pd.DataFrame(features)
         fullBody = pd.read_csv(f"{dirFullBody}{caseRead}.csv")
-        
-        randomInit = np.random.randint(600, features.shape[0]-150)
-        features = features.iloc[randomInit:(randomInit+150), :]
-        fullBody = fullBody.iloc[randomInit:(randomInit+300), :]
+
+        print(f"Features: {features.shape}") 
+        print(f"Full body: {fullBody.shape}") 
+
         fullBody = fullBody.to_numpy()
         fullBody = fullBody[:: 2, :] #Downsample
         fullBody = pd.DataFrame(fullBody)
+
+        print(f"Features: {features.shape}") 
+        print(f"Full body: {fullBody.shape}") 
+
+        randomInit = np.random.randint(120, features.shape[0]-150)
+        features = features.iloc[randomInit:(randomInit+150), :]
+        fullBody = fullBody.iloc[randomInit:(randomInit+150), :]
 
         features.to_csv("./generatedDance/custom/phoneNormalizedMatch.csv", index = False, header = False)
         fullBody.to_csv("./generatedDance/custom/groundTruthMatch.csv", index = False, header = False)
@@ -91,9 +97,15 @@ def test(opt):
         features = pd.DataFrame(features)
         fullBody = pd.read_csv(f"{dirFullBody}{caseRead}.csv")
         
+        print(f"Features: {features.shape}") 
+        print(f"Full body: {fullBody.shape}") 
+
         fullBody = fullBody.to_numpy()
         fullBody = fullBody[:: 2, :] #Downsample
         fullBody = pd.DataFrame(fullBody)
+
+        print(f"Features: {features.shape}") 
+        print(f"Full body: {fullBody.shape}") 
 
         features.to_csv("./generatedDance/originalAist/phoneNormalizedMatch.csv", index = False, header = False)
         fullBody.to_csv("./generatedDance/originalAist/groundTruthMatch.csv", index = False, header = False)
@@ -107,14 +119,11 @@ def test(opt):
        #Extract features
         df = pd.read_csv(f"{inputsPath}{j}", header=None)
         df = df.to_numpy()
-        print(df.shape)
 
         filE = np.float32(df)
         filE = torch.from_numpy(filE)
             
-        print(filE.shape)
         fileE = filE.reshape(1, 150, -1)
-        print(filE.shape)
 
         all_cond.append(fileE)
 

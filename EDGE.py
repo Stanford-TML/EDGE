@@ -218,7 +218,7 @@ class EDGE:
                             self.diffusion.master_model, self.diffusion.model
                         )
             # Save model
-            if (epoch % 50) == 0: #Save model every 200 epochs
+            if (epoch % 10) == 0: #Save model every 10 epochs
 #            if True: #Force save weights every epoch
                 # everyone waits here for the val loop to finish ( don't start next train epoch early)
                 self.accelerator.wait_for_everyone()
