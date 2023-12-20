@@ -585,17 +585,12 @@ class GaussianDiffusion(nn.Module):
         q = samples
         pos = samples
         
-        print(f"Predicted output of shape: {pos.shape}")
-        print(f"Name here: {name}")
-
         pos = pos.reshape(-1, 72)
         pd.DataFrame(pos).to_csv(name[0], index = False, header = False)
 
         print(f"Predicted output of shape: {pos.shape}")
         print(f"Name here: {name}")
           
-#        pd.DataFrame(pos[1]).to_csv(f"./generatedDance/test_{epoch}_2.csv", index = False, header = False)
-
         def inner(xx):
             num, pose = xx
             filename = name[num] if name is not None else None

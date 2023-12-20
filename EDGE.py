@@ -218,7 +218,7 @@ class EDGE:
                             self.diffusion.master_model, self.diffusion.model
                         )
             # Save model
-            if (epoch % 200) == 0: #Save model every 200 epochs
+            if (epoch % 50) == 0: #Save model every 200 epochs
 #            if True: #Force save weights every epoch
                 # everyone waits here for the val loop to finish ( don't start next train epoch early)
                 self.accelerator.wait_for_everyone()
@@ -246,7 +246,7 @@ class EDGE:
                         "normalizer": self.normalizer,
                     }
                     wdir = "./weights/" #User code. Force save weights path
-                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint_{epoch}.pt"))
+                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint_1000+.pt"))
                     # generate a sample
                     render_count = 1
                     shape = (render_count, self.horizon, self.repr_dim)
