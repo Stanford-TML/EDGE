@@ -15,5 +15,5 @@ for q in train:
         df = pd.DataFrame(df)
         df.to_csv(f"{dirOut}{k}.csv", index = False, header = False)
         print(k)
-
     print("Finished test")
+

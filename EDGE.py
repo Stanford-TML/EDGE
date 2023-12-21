@@ -246,7 +246,7 @@ class EDGE:
                         "normalizer": self.normalizer,
                     }
                     wdir = "./weights/" #User code. Force save weights path
-                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint_1000+.pt"))
+                    torch.save(ckpt, os.path.join(wdir, f"train_checkpoint_gyro.pt"))
                     # generate a sample
                     render_count = 1
                     shape = (render_count, self.horizon, self.repr_dim)

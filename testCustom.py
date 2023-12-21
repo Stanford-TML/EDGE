@@ -84,7 +84,7 @@ def test(opt):
 
     fk_out = None
 
-    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro.pt")
+    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro_1000.pt")
     model.eval()
 
     fileNames = ["./generatedDance/custom/predictedFullMatch.csv"]

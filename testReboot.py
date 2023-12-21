@@ -74,6 +74,8 @@ def test(opt):
         print(f"Features: {features.shape}") 
         print(f"Full body: {fullBody.shape}") 
 
+        assert fullBody.shape[0] == features.shape[0]
+
         randomInit = np.random.randint(120, features.shape[0]-150)
         features = features.iloc[randomInit:(randomInit+150), :]
         fullBody = fullBody.iloc[randomInit:(randomInit+150), :]

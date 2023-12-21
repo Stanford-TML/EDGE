@@ -51,9 +51,9 @@ def extractPhoneFeatures(directoryIn, directoryOut, brigitta = False):
             scaled_accel = scaler.fit_transform(phone[:, 0:3])
             phone[:, 0:3] = scaled_accel
 
-#            scaler = MinMaxScaler(feature_range=(minGyro, maxesGyro))
-#            scaled_gyro = scaler.fit_transform(phone[:, 3:6])
-#            phone[:, 3:6] = scaled_gyro
+            scaler = MinMaxScaler(feature_range=(minGyro, maxesGyro))
+            scaled_gyro = scaler.fit_transform(phone[:, 3:6])
+            phone[:, 3:6] = scaled_gyro
 
         phone = phone[:: 2, :]
         df = extractFeats(phone, phone.shape[0])
@@ -64,10 +64,10 @@ def extractPhoneFeatures(directoryIn, directoryOut, brigitta = False):
         print(f"Wrote file: {fName}")
 
 #Processing AIST++ dataset
-#for k in ["train", "test"]:
-#    directoryIn = f"../../data/{k}/positionsPhone/"
-#    directoryOut = f"../../data/{k}/baseline_feats/"
-#    extractPhoneFeatures(directoryIn, directoryOut, False)
+for k in ["train", "test"]:
+    directoryIn = f"../../data/{k}/positionsPhone/"
+    directoryOut = f"../../data/{k}/baseline_feats/"
+    extractPhoneFeatures(directoryIn, directoryOut, False)
 
 #Processing brigitta's dataset
 dirIn = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneIMU/"
