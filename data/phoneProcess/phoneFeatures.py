@@ -41,7 +41,9 @@ def extractPhoneFeatures(directoryIn, directoryOut, brigitta = False):
     for k in files:
         phone = pd.read_csv(f"{directoryIn}{k}")
         assert phone.shape[1] == 6 #3 dimensions for accelerometer, 3 for gyroscope
-    
+
+        print(phone.shape)    
+
         #Downsampling to half
         phone = phone.to_numpy()
 
