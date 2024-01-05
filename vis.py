@@ -14,6 +14,11 @@ from matplotlib.colors import ListedColormap
 #                                  quaternion_multiply)
 from tqdm import tqdm
 
+from pytorch3d.transforms import (axis_angle_to_quaternion, quaternion_apply,
+                                  quaternion_multiply, quaternion_to_axis_angle, RotateAxisAngle)
+
+
+
 smpl_joints = [
     "root",  # 0
     "lhip",  # 1

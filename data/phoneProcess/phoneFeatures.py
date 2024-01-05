@@ -6,6 +6,7 @@ import librosa
 from customFeatureExtract import *
 
 from sklearn.decomposition import PCA
+
 from scipy.stats import skew, kurtosis
 from scipy.fftpack import fft
 from scipy.signal import find_peaks
@@ -13,65 +14,58 @@ import pywt  # PyWavelets library for wavelet transform
 
 from sklearn.preprocessing import MinMaxScaler
 
-#Getting scaler values to rescale custom input
-aist = "/Users/pdealcan/Documents/github/EDGEk/data/test/positionsPhone/"
-aistFiles = os.listdir(aist)
+def createPhone(df, markerIndex, markerIndex2):
+    phone = (df[:,markerIndex:markerIndex+3] + df[:,markerIndex2:markerIndex2+3])/2 #Phone root calculated between right hip and knee markers
+    return phone
 
-#Scaler for accelerometer
-aistC = [pd.read_csv(f"{aist}{k}").iloc[:,0:3] for k in aistFiles]
-maxes = [np.max(np.max(k)) for k in aistC]
-mins = [np.min(np.min(k)) for k in aistC]
-
-minAccel = np.median(mins)
-maxesAccel = np.median(maxes)
-
-#Scaler for gyroscope
-aistC = [pd.read_csv(f"{aist}{k}").iloc[:,3:6] for k in aistFiles]
-maxes = [np.max(np.max(k)) for k in aistC]
-mins = [np.min(np.min(k)) for k in aistC]
-
-minGyro = np.median(mins)
-maxesGyro = np.median(maxes)
-
-#Receives IMU data (accelerometer and gyro)
-def extractPhoneFeatures(directoryIn, directoryOut, brigitta = False):
+def extractPhoneFeatures(directoryIn, directoryOut):
     #Read phone and ectract features
-    os.makedirs(directoryOut, exist_ok=True)
     files = os.listdir(directoryIn)
     for k in files:
-        phone = pd.read_csv(f"{directoryIn}{k}")
-        assert phone.shape[1] == 6 #3 dimensions for accelerometer, 3 for gyroscope
-
-        print(phone.shape)    
-
-        #Downsampling to half
-        phone = phone.to_numpy()
-
-        if brigitta:
-            print("Brigitta's dataset. Scaling data.")
-            scaler = MinMaxScaler(feature_range=(minAccel, maxesAccel))
-            scaled_accel = scaler.fit_transform(phone[:, 0:3])
-            phone[:, 0:3] = scaled_accel
-
-            scaler = MinMaxScaler(feature_range=(minGyro, maxesGyro))
-            scaled_gyro = scaler.fit_transform(phone[:, 3:6])
-            phone[:, 3:6] = scaled_gyro
-
-        phone = phone[:: 2, :]
-        df = extractFeats(phone, phone.shape[0])
-        df = np.float32(df)
         fName = f"{directoryOut}{k}"
-        fName = fName.replace(".csv", ".npy")
+        df = pd.read_csv(f"{directoryIn}{k}")
+        fName = f"{directoryOut}{k}"
+        fName = fName.replace("csv", "npy")
+        df = df.to_numpy()
+        df = df[:: 2, :]
+        df = get_second_derivative(df)
+        df = extractFeats(df, df.shape[0])
+        df = np.float32(df)
         np.save(fName, df)
-        print(f"Wrote file: {fName}")
+        print(f"Wrote file: {k}")
 
-#Processing AIST++ dataset
-for k in ["train", "test"]:
-    directoryIn = f"../../data/{k}/positionsPhone/"
-    directoryOut = f"../../data/{k}/baseline_feats/"
-    extractPhoneFeatures(directoryIn, directoryOut, False)
+##Getting Watch+Phone features from AIST++
+train = ["test", "test"]
+fType = ["accel"]
+for k in train:
+    for l in fType:
+        directoryIn = f"../{l}/{k}/positionsWatch/"
+        directoryOut = f"../{l}/{k}/baseline_feats_watch/"
+        extractPhoneFeatures(directoryIn, directoryOut)
 
-#Processing brigitta's dataset
-dirIn = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneIMU/"
-dirOut = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneFeatures/"
-extractPhoneFeatures(dirIn, dirOut, True)
+if False:
+    ##Getting features from AMASS (Accel only)
+    dirIn = "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/accelPositions/"
+    dirOut = "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/phoneFeatures/"
+    extractPhoneFeatures(dirIn, dirOut)
+
+    ##Getting features from AMASS (Gyro)
+    dirIn = "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/gyroPositions/"
+    dirOut = "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/phoneFeaturesGyro/"
+    extractPhoneFeatures(dirIn, dirOut)
+
+    ##Getting features from AIST++
+    train = ["test", "test"]
+    fType = ["accel", "gyro"]
+    for k in train:
+        for l in fType:
+            directoryIn = f"../{l}/{k}/positionsPhone/"
+            directoryOut = f"../{l}/{k}/baseline_feats/"
+            extractPhoneFeatures(directoryIn, directoryOut)
+
+    ##Extracting features from Brigitta
+    fType = ["accel", "gyro"]
+    for k in fType:
+        directoryIn = f"/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/{k}/phoneIMU/"
+        directoryOut = f"/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/{k}/phoneFeatures/"
+        extractPhoneFeatures(directoryIn, directoryOut)

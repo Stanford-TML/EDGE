@@ -26,6 +26,11 @@ def fP(x):
     x, _ = find_peaks(x)
     return x
 
+#Generate phone
+def createPhone(df):
+    phone = (df[:,6:9] + df[:,15:18])/2 #Phone root calculated between right hip and knee markers
+    return phone
+
 def extractFeats(acceleration_data, windowLength):
     #Descriptives accross euclidien dimensions (x, y, z)
     mean_values = np.mean(acceleration_data, axis=1)

@@ -53,7 +53,9 @@ class EDGE:
         self.repr_dim = repr_dim = rot_dim #pos_dim + rot_dim + 4
 
 #        feature_dim = 35 if use_baseline_feats else 4800
-        feature_dim = 141 #For accelerometer features
+#        feature_dim = 141 #For accelerometer and gyro features
+#        feature_dim = 75 #For accelerometer features
+        feature_dim = feature_type#
 
         horizon_seconds = 5
         FPS = 30

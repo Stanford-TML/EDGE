@@ -39,6 +39,38 @@ def stringintcmp_(a, b):
 
 stringintkey = cmp_to_key(stringintcmp_)
 
+dataset_details = {
+  "amass": {"accel": {"in": "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/phoneFeatures/",
+                      "out": "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/predicted/",
+                      "weights": "./weights/train_checkpointFirstTrain.pt",
+                      "nFeatures": 75},
+            "gyro": {"in": "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/phoneFeaturesGyro/",
+                     "out": "/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDBPoses/predictedGyro/",
+                     "weights": "./weights/train_checkpoint_gyro_current5.pt",
+                     "nFeatures": 141},
+  },
+  "aist": {"accel": {"in": "/Users/pdealcan/Documents/github/EDGEk/data/accel/test/baseline_feats/",
+                     "out": "/Users/pdealcan/Documents/github/EDGEk/data/accel/test/predicted/",
+                     "weights": "./weights/train_checkpointFirstTrain.pt",
+                     "nFeatures": 75},
+           "gyro": {"in": "/Users/pdealcan/Documents/github/EDGEk/data/gyro/test/baseline_feats/",
+                    "out": "/Users/pdealcan/Documents/github/EDGEk/data/gyro/test/predicted/",
+                    "weights": "./weights/train_checkpoint_gyro_current5.pt",
+                    "nFeatures": 141},
+  },
+  "brigitta": {"accel": {"in": "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/accel/phoneFeatures/",
+                         "out": "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/accel/predicted/",
+                         "weights": "./weights/train_checkpointFirstTrain.pt",
+                         "nFeatures": 75},
+               "gyro": {"in": "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/gyro/phoneFeatures/",
+                        "out": "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/gyro/predicted/",
+                        "weights": "./weights/train_checkpoint_gyro_current5.pt",
+                        "nFeatures": 141},
+  }
+}
+
+feature = "accel"
+dataset = "amass"
 
 def test(opt):
     sample_length = opt.out_length
@@ -47,80 +79,18 @@ def test(opt):
     sample_size = 1
     print(f"Sample size {sample_size}")
 
-    brigitta = True
+    inputsPath = dataset_details[dataset][feature]["in"]
+    render_dir = dataset_details[dataset][feature]["out"]
+    nFeatures = dataset_details[dataset][feature]["nFeatures"]
 
-    if brigitta:
-        dirPhoneInput = "/Users/pdealcan/Documents/github/data/CoE/accel/brigittaData/phoneFeatures/"
-        phoneInput = os.listdir(dirPhoneInput)
-        dirFullBody = "../data/CoE/accel/brigittaData/convertedCSV/"
+    fNames = os.listdir(inputsPath) #Name of input file
+    fileNames = [f"{render_dir}{x}".replace("npy", "csv") for x in fNames] #Name of output file
 
-        #Selected subset of dances for eval
-        phoneInput = ["58-LilyLaine_16", "12-HannaKuisma_21", "16-MikkoValtonen_ 03", "37-LeenaHjelt_beat_140", "50-JattaSavolainen_24", "36-SuviKulo_02", "46-KarlollinaKatainen_12", "46-KarlollinaKatainen_06", "47-EeviAntila_21", "57-AnnaNuoritimo_01", "01-MarjoPeltomaa_19", "48-MariaLaakso_18", "37-LeenaHjelt_02", "14-JohannaLaukkanen_20", "50-JattaSavolainen_16", "58-LilyLaine_20", "01-MarjoPeltomaa_06", "47-EeviAntila_14", "50-JattaSavolainen_ 03", "06-SariLiukkonen_ 03", "24-HeliTikkala_beat_140", "48-MariaLaakso_beatpractice_110", "11-JonnaAaltonen_24", "25-MesimaariaLammi_01", "11-JonnaAaltonen_beatpractice_110", "25-MesimaariaLammi_beatpractice_110", "03-HannaMarkuksela_beat_120", "30-KaisaPeltonen_12", "30-KaisaPeltonen_09", "47-EeviAntila_23", "24-HeliTikkala_10"]
+    model_weights = dataset_details[dataset][feature]["weights"]
 
-        matchIndex, unMatchIndex = random.sample(range(len(phoneInput)), 2)
-        caseRead = phoneInput[matchIndex].replace(".npy", "")
-
-        features = np.load(f"{dirPhoneInput}{caseRead}.npy")
-        features = pd.DataFrame(features)
-        fullBody = pd.read_csv(f"{dirFullBody}{caseRead}.csv")
-
-        print(f"Features: {features.shape}") 
-        print(f"Full body: {fullBody.shape}") 
-
-        fullBody = fullBody.to_numpy()
-        fullBody = fullBody[:: 2, :] #Downsample
-        fullBody = pd.DataFrame(fullBody)
-
-        print(f"Features: {features.shape}") 
-        print(f"Full body: {fullBody.shape}") 
-
-        assert fullBody.shape[0] == features.shape[0]
-
-        randomInit = np.random.randint(120, features.shape[0]-150)
-        features = features.iloc[randomInit:(randomInit+150), :]
-        fullBody = fullBody.iloc[randomInit:(randomInit+150), :]
-
-        features.to_csv("./generatedDance/custom/phoneNormalizedMatch.csv", index = False, header = False)
-        fullBody.to_csv("./generatedDance/custom/groundTruthMatch.csv", index = False, header = False)
-
-        inputsPath = "./generatedDance/custom/"
-
-    else:
-
-        dirPhoneInput = "./data/test/baseline_feats/"
-        phoneInput = os.listdir(dirPhoneInput)
-        dirFullBody = "./data/test/motions_sliced_csv/"
-
-        matchIndex, unMatchIndex = random.sample(range(100), 2)
-
-        caseRead = phoneInput[matchIndex].replace(".npy", "")
-
-        features = np.load(f"{dirPhoneInput}{caseRead}.npy")
-        features = pd.DataFrame(features)
-        fullBody = pd.read_csv(f"{dirFullBody}{caseRead}.csv")
-        
-        print(f"Features: {features.shape}") 
-        print(f"Full body: {fullBody.shape}") 
-
-        fullBody = fullBody.to_numpy()
-        fullBody = fullBody[:: 2, :] #Downsample
-        fullBody = pd.DataFrame(fullBody)
-
-        print(f"Features: {features.shape}") 
-        print(f"Full body: {fullBody.shape}") 
-
-        features.to_csv("./generatedDance/originalAist/phoneNormalizedMatch.csv", index = False, header = False)
-        fullBody.to_csv("./generatedDance/originalAist/groundTruthMatch.csv", index = False, header = False)
-
-        inputsPath = "./generatedDance/originalAist/"
-
-    fNames = ["phoneNormalizedMatch.csv"]
-  
     all_cond = [] 
     for j in fNames:
-       #Extract features
-        df = pd.read_csv(f"{inputsPath}{j}", header=None)
-        df = df.to_numpy()
+        df = np.load(f"{inputsPath}{j}")
 
         filE = np.float32(df)
         filE = torch.from_numpy(filE)
@@ -128,20 +98,12 @@ def test(opt):
         fileE = filE.reshape(1, 150, -1)
 
         all_cond.append(fileE)
-
-
-    model = EDGE(opt.feature_type, "./weights/train_checkpoint_gyro_current2.pt")
+    
+    model = EDGE(nFeatures, model_weights)
     model.eval()
 
     # directory for saving the dances
     fk_out = None
-
-    if brigitta:
-        render_dir = "./generatedDance/custom/"
-        fileNames = ["./generatedDance/custom/predictedFullMatch.csv"]
-    else:
-        render_dir = "./generatedDance/originalAist/"
-        fileNames = ["./generatedDance/originalAist/predictedFullMatch.csv"]
         
     print("Generating dances")
     for i in range(len(all_cond)):

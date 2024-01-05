@@ -4,6 +4,8 @@ import torch
 import sys
 import os
 
+import json
+
 import pickle as pkl
 
 from dataset.dance_dataset import *
@@ -11,17 +13,19 @@ from dataset.dance_dataset import *
 from vis import SMPLSkeleton
 
 from pytorch3d.transforms import (axis_angle_to_quaternion, quaternion_apply,
-                                  quaternion_multiply)
+                                  quaternion_multiply, quaternion_to_axis_angle, RotateAxisAngle)
 
 # CONVERTS SMPL REPRESENTATIONS TO POSITIONS, AND CREATES A ROOT FOR THE CENTER OF
 # A PHONE AS THE AVERAGE OF HIP AND KNEE MARKERS
 
 #markers = ["root", "lhip", "rhip", "belly", "lknee", "rknee", "spine", "lankle", "rankle", "chest", "ltoes", "rtoes", "neck", "linshoulder", "rinshoulder", "head",  "lshoulder", "rshoulder", "lelbow", "relbow", "lwrist", "rwrist", "lhand", "rhand"]
-def smplToPosition(df):
+name1 = 'pos'
+name2 = 'q'
+def smplToPosition(df, name1 = 'pos', name2 = 'q', aist = True):
     smpl = SMPLSkeleton()
     # to Tensor
-    root_pos = torch.Tensor(np.array([df['pos']]))
-    local_q = torch.Tensor(np.array([df['q']]))
+    root_pos = torch.Tensor(np.array([df[name1]]))
+    local_q = torch.Tensor(np.array([df[name2]]))
     # to ax
     bs, sq, c = local_q.shape
     local_q = local_q.reshape((bs, sq, -1, 3))
@@ -40,12 +44,15 @@ def smplToPosition(df):
         root_pos
     )  # basically (y, z) -> (-z, y), expressed as a rotation for readability
     # do FK
+    print(local_q.shape)
+    print(root_pos.shape)
     positions = smpl.forward(local_q, root_pos)  # batch x sequence x 24 x 3
     #positions = positions.reshape(17733, 150, -1)
     #positions = positions.reshape(186, 150, -1)
     positions = positions[0]
     positions = positions.numpy()
-    positions = positions.reshape(300, 72)
+    if aist:
+        positions = positions.reshape(300, 72)
 #    positions = positions.reshape(-1, 150, 72)
     #Tenho que transformar de volta em numpy, não Torch tensor
     return positions
@@ -65,7 +72,76 @@ def wrapMotionConverter(train):
         pkl.dump(df, fileObject)
         print(f"Wrote file: {k}")
 
-train = "test"
-wrapMotionConverter(train)
-train = "train"
-wrapMotionConverter(train)
+#Converting AIST++ to positions
+#train = "test"
+#wrapMotionConverter(train)
+#train = "train"
+#wrapMotionConverter(train)
+
+#Converting AMASS to position
+a = np.load("/Users/pdealcan/Documents/github/data/CoE/accel/amass/DanceDB/20120731_StefanosTheodorou/Stefanos_1os_antrikos_karsilamas_C3D_poses.npz")
+[print(b) for b in a]
+
+df = {}
+df['q'] = a['poses'][:,3:75]
+df['pos'] = a['poses'][:,0:3]
+df['pos'].shape
+df['q'].shape
+#df = smplToPosition(df, aist = False)
+#df = df.reshape(-1, 72)
+
+#df = pd.DataFrame(df)
+smpl = SMPLSkeleton()
+root_pos = torch.Tensor(np.array([df[name1]]))
+local_q = torch.Tensor(np.array([df[name2]]))
+
+bs, sq, c = local_q.shape
+local_q = local_q.reshape((bs, sq, -1, 3))
+
+positions = smpl.forward(local_q, root_pos)  # batch x sequence x 24 x 3
+positions = positions.reshape(bs, sq, 72)
+positions = positions[0]
+
+df = pd.DataFrame(positions)
+df.to_csv("/Users/pdealcan/Documents/github/EDGEk/test.csv", index = False, header = False)
+
+
+
+
+
+#Converting Phantom to positions
+pathIn = "/Users/pdealcan/Documents/github/data/CoE/accel/phantomDanceData/motion/"
+files = os.listdir(pathIn)
+f = open(f"{pathIn}{files[60]}")
+df = json.load(f)
+df['pos'] = df.pop('root_positions')
+df['q'] = df.pop('rotations')
+df = {'pos': np.array(df['pos']),
+      'q': np.array(df['q'])}
+#df['pos'].shape
+#df['q'].shape
+df['q'] = df['q'][:, :, 0:3]
+df['q'] = df['q'].reshape(-1, 72)
+df['q'].shape
+
+df = smplToPosition(df, aist = False)
+df = df.reshape(-1, 72)
+df = pd.DataFrame(df)
+df.to_csv("/Users/pdealcan/Documents/github/EDGEk/test.csv", index = False, header = False)
+
+
+
+
+
+#Converting AIST++ to positions
+#train = "test"
+directoryIn = f"/Users/pdealcan/Documents/github/motions_sliced_original_test/"
+files = os.listdir(directoryIn) #SMPL files
+df = pd.read_pickle(f"{directoryIn}{files[50]}")
+df['pos'].shape
+df['q'].shape
+
+df = smplToPosition(df)
+df = pd.DataFrame(df)
+
+df.to_csv("/Users/pdealcan/Documents/github/EDGEk/test.csv", index = False, header = False)
